@@ -1,0 +1,9 @@
+node_modules/
+*.tgz
+.pi/
+.pi-subagents/
+.env
+.env.*
+.npmrc
+*.log
+.DS_Store

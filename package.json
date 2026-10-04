@@ -1,0 +1,22 @@
+{
+  "name": "pi-delay-prompt",
+  "version": "0.1.0",
+  "description": "Delay the next Pi prompt with a visible countdown (useful for rate limits).",
+  "type": "module",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/dirop1/pi-delay-prompt.git" },
+  "homepage": "https://github.com/dirop1/pi-delay-prompt#readme",
+  "bugs": { "url": "https://github.com/dirop1/pi-delay-prompt/issues" },
+  "keywords": ["pi-package", "prompt", "delay", "rate-limit"],
+  "files": ["src", "README.md", "LICENSE"],
+  "pi": { "extensions": ["./src/index.ts"] },
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check src/core.mjs && node --experimental-strip-types --check src/index.ts"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-tui": "*"
+  }
+}
