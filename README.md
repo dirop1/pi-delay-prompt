@@ -2,6 +2,8 @@
 
 Delay the next Pi prompt with a visible countdown. Useful for rate limits: arm a delay, type the prompt, and it sends after the timer (or send immediately / cancel and restore the editor).
 
+![Duration picker and delayed-prompt countdown, alternating every three seconds](./assets/demo.gif)
+
 ## Install
 
 From npm:
@@ -41,6 +43,24 @@ With no argument, `/delay-prompt` opens a numeric-only duration picker, also use
 Keyboard shortcut `Ctrl+Alt+D` delays the prompt currently in the editor (or arms the next one when the editor is empty).
 
 During the countdown, `Enter` sends immediately and `Esc` cancels and restores the editor text.
+
+## Example: give CI time to finish
+
+If a CI pipeline usually takes a few minutes, arm a timed follow-up:
+
+```text
+/delay-prompt 5
+```
+
+Then write and submit your prompt:
+
+```text
+Check the latest CI pipeline for this branch. If it failed, inspect the failed jobs and summarize what needs fixing.
+```
+
+Pi holds the prompt for five minutes before sending it. This is a fixed delay, **not CI polling**: the pipeline may still be running when the prompt sends. The assistant needs the appropriate CLI or tools and authentication to inspect your CI provider. Press `Enter` during the countdown to send early, or `Esc` to cancel and restore the prompt.
+
+Alternatively, write the prompt first, press `Ctrl+Alt+D`, and choose the delay.
 
 ## Development
 
