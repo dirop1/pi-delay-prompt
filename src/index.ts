@@ -1,6 +1,7 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { Key, matchesKey, truncateToWidth } from "@earendil-works/pi-tui";
+import { Input, Key, matchesKey, truncateToWidth } from "@earendil-works/pi-tui";
 import { formatRemaining, parseDelay, preview } from "./core.mjs";
+import { isMinutesDraft } from "./minutes.ts";
 
 const STATUS_KEY = "delay-prompt";
 const OVERLAY_WIDTH = 56;
@@ -21,14 +22,72 @@ export default function delayPrompt(pi: ExtensionAPI) {
 	}
 
 	async function askMinutes(ctx: ExtensionContext): Promise<number | null> {
-		const raw = await ctx.ui.input("Delay prompt — enter time in minutes", "e.g. 5");
-		if (raw === undefined) return null;
-		const parsed = parseDelay(raw);
-		if (!parsed.ok || parsed.cancel || parsed.ms === undefined) {
-			ctx.ui.notify("Enter a positive delay up to 180 minutes (e.g. 5 or 1.5).", "warning");
+		if (ctx.mode !== "tui" || !ctx.hasUI) {
+			ctx.ui.notify("Delay needs interactive terminal mode.", "error");
 			return null;
 		}
-		return parsed.ms;
+		return ctx.ui.custom<number | null>((tui, theme, _kb, done) => {
+			const input = new Input({ prompt: "Minutes: ", placeholder: "e.g. 5 or 1.5" });
+			const presets = ["1", "5", "10", "30"];
+			let preset = -1;
+			let error = "";
+			let paste: string | null = null;
+			input.onEscape = () => done(null);
+			input.onSubmit = raw => {
+				const parsed = parseDelay(raw);
+				if (isMinutesDraft(raw) && parsed.ok && parsed.ms !== undefined) done(parsed.ms);
+				else { error = "Choose 1 second to 180 minutes (e.g. 0.5)."; tui.requestRender(); }
+			};
+			return {
+				get focused() { return input.focused; },
+				set focused(value: boolean) { input.focused = value; },
+				render(width: number) {
+					const line = (text: string) => truncateToWidth(text, width);
+					return [
+						line(theme.fg("accent", "─".repeat(width))),
+						line(theme.fg("text", "Delay duration — minutes, not prompt text")),
+						line(theme.fg("muted", "Your prompt stays in the main editor.")),
+						"",
+						...input.render(width),
+						line(theme.fg("muted", "Quick presets (Tab): 1 / 5 / 10 / 30 min")),
+						line(theme.fg(error ? "warning" : "dim", error || "Digits + one decimal point only. Max 180 min.")),
+						line(theme.fg("dim", "Enter apply · Esc / Ctrl+C cancel")),
+						line(theme.fg("accent", "─".repeat(width))),
+					];
+				},
+				handleInput(data: string) {
+					// Validate complete pasted text before Input can normalize newlines.
+					if (data.includes("\x1b[200~")) paste = "";
+					if (paste !== null) {
+						paste += data.replace("\x1b[200~", "");
+						const end = paste.indexOf("\x1b[201~");
+						if (end < 0) return;
+						const text = paste.slice(0, end);
+						paste = null;
+						if (!isMinutesDraft(text)) {
+							error = "Paste a number in minutes, not prompt text.";
+							tui.requestRender(); return;
+						}
+						data = `\x1b[200~${text}\x1b[201~`;
+					}
+					if (matchesKey(data, Key.escape) || matchesKey(data, Key.ctrl("c"))) { done(null); return; }
+					if (matchesKey(data, Key.tab)) {
+						preset = (preset + 1) % presets.length;
+						input.setValue(presets[preset]);
+						error = ""; tui.requestRender(); return;
+					}
+					const previous = input.getValue();
+					error = "";
+					input.handleInput(data);
+					if (!isMinutesDraft(input.getValue())) {
+						input.setValue(previous);
+						error = "Numbers only — write your prompt in the main editor.";
+					}
+					tui.requestRender();
+				},
+				invalidate() { input.invalidate(); },
+			};
+		}, { overlay: true, overlayOptions: { anchor: "center", width: 64 } });
 	}
 
 	function countdownLines(theme: any, text: string, remainingMs: number): string[] {

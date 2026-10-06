@@ -36,6 +36,8 @@ Requires Node.js 22+ and Pi interactive terminal mode. Package metadata includes
 
 Plain numbers are minutes. Range is 1 second to 180 minutes. Slash commands are never delayed. Only one countdown runs at a time; overlapping prompts are sent normally instead of stacking.
 
+With no argument, `/delay-prompt` opens a numeric-only duration picker, also used by `Ctrl+Alt+D`. Enter minutes (`5`, `1.5`, or `1,5`), or press `Tab` to cycle quick presets (1 / 5 / 10 / 30 minutes), then `Enter` to apply. Letters and multiline pastes are rejected; invalid durations show an inline error without closing the picker. `Esc` or `Ctrl+C` cancels. Your prompt belongs in the main editor, not the duration field.
+
 Keyboard shortcut `Ctrl+Alt+D` delays the prompt currently in the editor (or arms the next one when the editor is empty).
 
 During the countdown, `Enter` sends immediately and `Esc` cancels and restores the editor text.
